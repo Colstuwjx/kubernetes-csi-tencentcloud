@@ -16,23 +16,26 @@ spec:
 
 ---
 kind: StatefulSet
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 metadata:
   name: csi-attacher-cfsplugin
 spec:
   serviceName: csi-attacher-cfsplugin
   replicas: 1
+  selector:
+    matchLabels:
+      app: csi-attacher-cfsplugin
   template:
     metadata:
       labels:
         app: csi-attacher-cfsplugin
     spec:
-      serviceAccount: csi-cfs-tencentcloud
+      serviceAccountName: csi-cfs-tencentcloud
       containers:
         - name: csi-attacher
           image: ccr.ccs.tencentyun.com/ccs-dev/csi-attacher:1.0.1
           args:
-            - "--v=3"
+            - "--v=5"
             - "--csi-address=$(ADDRESS)"
           env:
             - name: ADDRESS
@@ -43,7 +46,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: cfs
           image: ccr.ccs.tencentyun.com/ccs-dev/csi-tencentcloud-cfs:1.0.0
-          args :
+          args:
             - "--nodeID=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
           env:
@@ -59,5 +62,4 @@ spec:
               mountPath: /plugin
       volumes:
         - name: socket-dir
-          emptyDir:
-
+          emptyDir: {}
