@@ -3,4 +3,3 @@ kind: VolumeSnapshotClass
 metadata:
   name: cbs-snapclass
 snapshotter: com.tencent.cloud.csi.cbs
-

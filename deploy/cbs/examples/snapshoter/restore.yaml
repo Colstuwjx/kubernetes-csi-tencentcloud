@@ -5,7 +5,7 @@ metadata:
 spec:
   storageClassName: cbs-csi
   dataSource:
-    name: new-snapshot-demo 
+    name: new-snapshot-demo
     kind: VolumeSnapshot
     apiGroup: snapshot.storage.k8s.io
   accessModes:
@@ -13,4 +13,3 @@ spec:
   resources:
     requests:
       storage: 20Gi
-

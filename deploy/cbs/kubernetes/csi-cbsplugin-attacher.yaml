@@ -1,37 +1,38 @@
 ---
-kind: Service
-apiVersion: v1
+kind: Deployment
+apiVersion: apps/v1
 metadata:
   name: csi-cbsplugin-attacher
-  labels:
-    app: csi-cbsplugin-attacher
+  namespace: kube-system
 spec:
-  selector:
-    app: csi-cbsplugin-attacher
-  ports:
-    - name: dummy
-      port: 12345
-
----
-kind: StatefulSet
-apiVersion: apps/v1beta1
-metadata:
-  name: csi-cbsplugin-attacher
-spec:
-  serviceName: "csi-cbsplugin-attacher"
   replicas: 1
+  selector:
+    matchLabels:
+      app: csi-cbsplugin-attacher
   template:
     metadata:
       labels:
         app: csi-cbsplugin-attacher
     spec:
-      serviceAccount: tencentcloud-csi-attacher
+      hostNetwork: true
+      serviceAccountName: tencentcloud-csi-attacher
+      nodeSelector:
+        kubernetes.io/os: linux
+      # priorityClassName: system-cluster-critical
+      # tolerations:
+      #   - key: "node-role.kubernetes.io/master"
+      #     operator: "Equal"
+      #     value: "true"
+      #     effect: "NoSchedule"
       containers:
         - name: csi-cbsplugin-attacher
-          image: quay.io/k8scsi/csi-attacher:v1.2.0
+          image: quay.io/k8scsi/csi-attacher:v2.1.1
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
+            # - "-timeout=120s"
+            # - "-leader-election"
+            # - "-leader-election-type=leases"
           env:
             - name: ADDRESS
               value: /csi/csi.sock

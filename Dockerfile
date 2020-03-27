@@ -7,4 +7,3 @@ RUN yum  install -y e2fsprogs xfsprogs && yum clean all
 COPY _output/csi-tencentcloud-cbs /csi-tencentcloud-cbs
 RUN chmod +x /csi-tencentcloud-cbs
 CMD ["/csi-tencentcloud-cbs"]
-
