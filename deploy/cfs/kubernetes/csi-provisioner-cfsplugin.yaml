@@ -1,4 +1,3 @@
-
 kind: Service
 apiVersion: v1
 metadata:
@@ -14,7 +13,7 @@ spec:
 
 ---
 kind: StatefulSet
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 metadata:
   name: csi-provisioner-cfsplugin
 spec:
@@ -32,7 +31,7 @@ spec:
           args:
             - "--provisioner=com.tencent.cloud.csi.cfs"
             - "--csi-address=$(ADDRESS)"
-            - "--v=3"
+            - "--v=5"
             - "--connection-timeout=120s"
           env:
             - name: ADDRESS
@@ -43,7 +42,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: cfs
           image: ccr.ccs.tencentyun.com/ccs-dev/csi-tencentcloud-cfs:1.0.0
-          args :
+          args:
             - "--nodeID=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
           env:
@@ -63,5 +62,4 @@ spec:
               mountPath: /plugin
       volumes:
         - name: socket-dir
-          emptyDir:
-
+          emptyDir: {}

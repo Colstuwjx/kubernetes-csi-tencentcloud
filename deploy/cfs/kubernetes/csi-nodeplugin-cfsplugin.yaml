@@ -1,7 +1,7 @@
-# This YAML file contains driver-registrar & csi driver nodeplugin API objects
+# This YAML file contains node-driver-registrar & csi driver nodeplugin API objects
 # that are necessary to run CSI nodeplugin for cfs
 kind: DaemonSet
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 metadata:
   name: csi-nodeplugin-cfsplugin
 spec:
@@ -16,12 +16,17 @@ spec:
       serviceAccount: csi-cfs-tencentcloud
       hostNetwork: true
       containers:
-        - name: driver-registrar
+        - name: node-driver-registrar
           image: ccr.ccs.tencentyun.com/ccs-dev/csi-node-driver-registrar:1.0.2
           lifecycle:
             preStop:
               exec:
-                command: ["/bin/sh", "-c", "rm -rf /registration/com.tencent.cloud.csi.cfs /registration/com.tencent.cloud.csi.cfs-reg.sock"]
+                command:
+                  [
+                    "/bin/sh",
+                    "-c",
+                    "rm -rf /registration/com.tencent.cloud.csi.cfs /registration/com.tencent.cloud.csi.cfs-reg.sock",
+                  ]
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
@@ -34,7 +39,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
-            - name: plugin-dir
+            - name: plugins-dir
               mountPath: /plugin
             - name: registration-dir
               mountPath: /registration
@@ -45,7 +50,7 @@ spec:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
           image: ccr.ccs.tencentyun.com/ccs-dev/csi-tencentcloud-cfs:1.0.0
-          args :
+          args:
             - "--nodeID=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
           env:
@@ -57,17 +62,17 @@ spec:
               value: unix://plugin/csi.sock
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
-            - name: plugin-dir
+            - name: plugins-dir
               mountPath: /plugin
-            - name: pods-mount-dir
+            - name: mountpoint-dir
               mountPath: /var/lib/kubelet/pods
               mountPropagation: "Bidirectional"
       volumes:
-        - name: plugin-dir
+        - name: plugins-dir
           hostPath:
             path: /var/lib/kubelet/plugins/com.tencent.cloud.csi.cfs
             type: DirectoryOrCreate
-        - name: pods-mount-dir
+        - name: mountpoint-dir
           hostPath:
             path: /var/lib/kubelet/pods
             type: Directory
