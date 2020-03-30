@@ -16,6 +16,13 @@ spec:
         app: snapshot-controller
     spec:
       serviceAccount: snapshot-controller
+      priorityClassName: k8s-cluster-critical
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+        node-role.kubernetes.io/master: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
       containers:
         - name: snapshot-controller
           image: quay.io/k8scsi/snapshot-controller:v2.0.1
