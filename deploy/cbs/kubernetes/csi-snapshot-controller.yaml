@@ -21,5 +21,5 @@ spec:
           image: quay.io/k8scsi/snapshot-controller:v2.0.1
           args:
             - "--v=5"
-            - "--leader-election=false"
+            - "-leader-election"
           imagePullPolicy: Always

@@ -31,10 +31,10 @@ spec:
             - "--feature-gates=Topology=True"
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
-            # - "--connection-timeout=15s"
-            # - "--timeout=120s"
-            # - "--enable-leader-election"
-            # - "--leader-election-type=leases"
+            - "--connection-timeout=15s"
+            - "--timeout=120s"
+            - "--enable-leader-election"
+            - "--leader-election-type=leases"
           env:
             - name: ADDRESS
               value: unix:///csi/csi.sock
@@ -47,7 +47,7 @@ spec:
           args:
             - "--csi-address=$(ADDRESS)"
             - "--v=5"
-            # - "--leader-election"
+            - "-leader-election"
           env:
             - name: ADDRESS
               value: unix:///csi/csi.sock
@@ -62,9 +62,8 @@ spec:
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
-            # - "-timeout=120s"
-            # - "-leader-election"
-            # - "-leader-election-type=leases"
+            - "-timeout=120s"
+            - "-leader-election"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
