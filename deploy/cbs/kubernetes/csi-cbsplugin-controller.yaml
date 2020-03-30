@@ -1,0 +1,150 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: csi-cbsplugin-controller
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-cbsplugin-controller
+  template:
+    metadata:
+      labels:
+        app: csi-cbsplugin-controller
+    spec:
+      hostNetwork: true
+      serviceAccountName: tencentcloud-csi-controller-sa
+      priorityClassName: k8s-cluster-critical
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+        node-role.kubernetes.io/master: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+      containers:
+        - name: csi-cbsplugin-provisioner
+          image: quay.io/k8scsi/csi-provisioner:v1.5.0
+          args:
+            - "--provisioner=com.tencent.cloud.csi.cbs"
+            - "--feature-gates=Topology=True"
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+            # - "--connection-timeout=15s"
+            # - "--timeout=120s"
+            # - "--enable-leader-election"
+            # - "--leader-election-type=leases"
+          env:
+            - name: ADDRESS
+              value: unix:///csi/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: csi-cbsplugin-snapshotter
+          image: quay.io/k8scsi/csi-snapshotter:v2.0.1
+          args:
+            - "--csi-address=$(ADDRESS)"
+            - "--v=5"
+            # - "--leader-election"
+          env:
+            - name: ADDRESS
+              value: unix:///csi/csi.sock
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: csi-cbsplugin-attacher
+          image: quay.io/k8scsi/csi-attacher:v2.1.1
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            # - "-timeout=120s"
+            # - "-leader-election"
+            # - "-leader-election-type=leases"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: csi-tencentcloud
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["SYS_ADMIN"]
+            allowPrivilegeEscalation: true
+          image: ccr.ccs.tencentyun.com/library/csi-tencentcloud-cbs:v1.0.0
+          command:
+            - "/csi-tencentcloud-cbs"
+          args:
+            - "--v=5"
+            - "--logtostderr=true"
+            - "--endpoint=unix:///csi/csi.sock"
+          env:
+            - name: TENCENTCLOUD_CBS_API_SECRET_ID
+              valueFrom:
+                secretKeyRef:
+                  name: csi-tencentcloud
+                  key: TENCENTCLOUD_CBS_API_SECRET_ID
+            - name: TENCENTCLOUD_CBS_API_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: csi-tencentcloud
+                  key: TENCENTCLOUD_CBS_API_SECRET_KEY
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: pods-mount-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: "Bidirectional"
+            - name: plugin-mount-dir
+              mountPath: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/
+              mountPropagation: "Bidirectional"
+            - mountPath: /dev
+              name: host-dev
+            - mountPath: /rootfs
+              name: host-rootfs
+            - mountPath: /sys
+              name: host-sys
+            - mountPath: /lib/modules
+              name: lib-modules
+              readOnly: true
+      volumes:
+        - name: socket-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/com.tencent.cloud.csi.cbs
+            type: DirectoryOrCreate
+        - name: plugin-mount-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices/
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: pods-mount-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+        - name: host-dev
+          hostPath:
+            path: /dev
+        - name: host-rootfs
+          hostPath:
+            path: /
+        - name: host-sys
+          hostPath:
+            path: /sys
+        - name: lib-modules
+          hostPath:
+            path: /lib/modules
